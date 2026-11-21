@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"fridare-gui/internal/core"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"fridare-gui/internal/core"
+	"fridare-gui/internal/i18n"
 )
 
 // BuildPatchedFridaToolsWheels builds host client packages aligned with the Frida source tag:
@@ -35,7 +37,7 @@ func BuildPatchedFridaToolsWheels(cfg JobConfig, catalogRoot string, entryDirs [
 	}
 	version := strings.TrimSpace(cfg.FridaVersion)
 	if version == "" {
-		return nil, fmt.Errorf("Frida 版本为空，无法下载 host frida/frida-tools")
+		return nil, fmt.Errorf(i18n.T("Frida 版本为空，无法下载 host frida/frida-tools"))
 	}
 	// Catalog stays on the product label (17.17.1); pip needs the official tag.
 	pipVer := EffectivePipVersion(cfg)
@@ -194,6 +196,7 @@ func PatchFridaRPCInWheel(srcWheel, dstWheel, magic string) (int, error) {
 // patchFridaRPCInWheel extracts a wheel, replaces frida:rpc → {magic}:rpc in:
 //   - pure Python (.py) via text patch
 //   - native extensions (.pyd / .so / .dylib) via same-length binary replace
+//
 // Then re-zips. Magic must be len("frida") so binary lengths stay valid.
 func patchFridaRPCInWheel(srcWheel, dstWheel, magic string) (int, error) {
 	if err := core.ValidateMagicName(magic); err != nil {
@@ -394,7 +397,7 @@ func findPython() (string, error) {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("未找到 python（需用于 pip download / wheel 打包 frida-tools）")
+	return "", fmt.Errorf(i18n.T("未找到 python（需用于 pip download / wheel 打包 frida-tools）"))
 }
 
 func runPython(runner Runner, py string, opts *runOpts, args ...string) error {
@@ -402,6 +405,7 @@ func runPython(runner Runner, py string, opts *runOpts, args ...string) error {
 	ctx := context.Background()
 	// Always use exec with Dir/Env for reliability on Windows (Runner may not set cwd)
 	cmd := exec.CommandContext(ctx, py, full...)
+	hideConsoleCmd(cmd)
 	if opts != nil {
 		if opts.dir != "" {
 			cmd.Dir = opts.dir
@@ -424,6 +428,7 @@ func extractArchive(arch, dest string) error {
 	switch {
 	case strings.HasSuffix(low, ".tar.gz"), strings.HasSuffix(low, ".tgz"):
 		cmd := exec.Command("tar", "-xzf", arch, "-C", dest)
+		hideConsoleCmd(cmd)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("tar: %w %s", err, truncate(string(out), 200))
 		}
@@ -432,12 +437,13 @@ func extractArchive(arch, dest string) error {
 		// whl is zip
 		cmd := exec.Command("python", "-c",
 			fmt.Sprintf("import zipfile; zipfile.ZipFile(r'''%s''').extractall(r'''%s''')", arch, dest))
+	hideConsoleCmd(cmd)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("unzip: %w %s", err, truncate(string(out), 200))
 		}
 		return nil
 	default:
-		return fmt.Errorf("未知包格式: %s", filepath.Base(arch))
+		return fmt.Errorf(i18n.T("未知包格式: %s"), filepath.Base(arch))
 	}
 }
 
@@ -471,7 +477,7 @@ func findFridaToolsPackageRoot(srcDir string) (string, error) {
 			}
 		}
 	}
-	return "", fmt.Errorf("解压后未找到 frida_tools 包目录")
+	return "", fmt.Errorf(i18n.T("解压后未找到 frida_tools 包目录"))
 }
 
 // patchFridaToolsTree applies safe RPC renames under a frida-tools source/wheel extract.
@@ -544,7 +550,7 @@ func downloadFridaToolsForFrida(runner Runner, py string, env []string, dlDir, f
 		}
 	}
 	if len(toolsFiles) == 0 {
-		return "", "", fmt.Errorf("未下载到 frida-tools 包（目录: %s）", dlDir)
+		return "", "", fmt.Errorf(i18n.T("未下载到 frida-tools 包（目录: %s）"), dlDir)
 	}
 	// Prefer sdist .tar.gz for patching
 	archPath = toolsFiles[0]
@@ -1047,31 +1053,46 @@ func fridaToolsInstallNotes(cfg JobConfig, toolsWheels, hostFridaWheels []string
 		whl = toolsNames[0]
 	}
 	var hostList strings.Builder
+	pipVer := EffectivePipVersion(cfg)
+	if pipVer == "" {
+		pipVer = strings.TrimSpace(cfg.FridaVersion)
+	}
 	if len(hostFridaWheels) == 0 {
-		hostList.WriteString("  (未下载到多平台 frida 原生 wheel，请本机 pip install frida==版本)\n")
+		hostList.WriteString(i18n.T("  (未下载到多平台 frida 原生 wheel)\n"))
 	} else {
 		for _, w := range hostFridaWheels {
 			hostList.WriteString("  - " + hostWheelRelPath(w) + "\n")
 		}
 	}
-	return fmt.Sprintf(`Fridare 魔改 frida-tools + 多平台 host frida（与源码 tag 对齐）
+	product := strings.TrimSpace(cfg.FridaVersion)
+	verNote := i18n.T("产品标签与 pip 的 frida 版本相同")
+	if product != pipVer {
+		verNote = i18n.T("产品标签 ") + product + i18n.T(" 不是 PyPI 版本；wheel 与 frida.__version__ 使用 ") + pipVer
+	}
+	return fmt.Sprintf(i18n.T(`Fridare 魔改客户端 wheel（与源码 tag 对齐）
 ============================================================
-catalog 键 / Frida 源码 tag: %s
+产品标签 / catalog 目录名: %s
+pip 的 frida 版本 (EffectivePipVersion): %s
+%s
 魔改 magic: %s
 端口: %d
 
-【重要】服务端与客户端已同步魔改，必须成对安装本 catalog 内 wheel。
+名称不要混用：
+  - PyPI 发行名是 frida-tools。不要执行 pip install frida-tools（那会装官方未魔改包）。
+  - wheel 文件名和 import 包名是 frida_tools（下划线）。
+  - 原生绑定的发行名和 import 都是 frida，wheel 文件名是 frida-%s-*.whl。
+
+【重要】服务端与客户端已同步魔改，必须成对安装本 catalog 内的 wheel 文件。
   - frida:rpc → %s:rpc
   - re.frida.* → re.%s.*          (DBus 接口名)
   - /re/frida/ → /re/%s/          (DBus 对象路径，缺了会 UNKNOWN_METHOD)
   - Frida.* API 字面量 → %s.*
-  不要 pip install 官方未魔改的 frida/frida-tools，否则协议对不上。
 
-A) frida-tools（纯 Python，任意宿主机）:
+A) frida_tools wheel（纯 Python，任意宿主机；发行名 frida-tools）:
   %s
   - install_requires: frida==%s
 
-B) frida 原生扩展（路径相对本 INSTALL.txt 所在目录：python/ 或 host-wheels zip 根）:
+B) frida 原生 wheel（路径相对本 INSTALL.txt 所在目录：python/ 或 host-wheels zip 根）:
   windows-amd64 | windows-arm64
   macos-x86_64  | macos-arm64
   linux-x86_64  | linux-arm64
@@ -1091,7 +1112,8 @@ B) frida 原生扩展（路径相对本 INSTALL.txt 所在目录：python/ 或 h
   # Linux aarch64
   pip install --force-reinstall --no-deps "host/linux-arm64/frida-*.whl"
 
-  # 再装 frida-tools（纯 Python，任意宿主机）。文件名里的 '+' 是 PEP 440 本地版本，不要改成 '.'。
+  # 再装 CLI。用上面的 frida_tools-*.whl 文件名，不要改成发行名 frida-tools。
+  # 文件名里的 '+' 是 PEP 440 本地版本，不要改成 '.'。
   pip install --force-reinstall --no-deps "%s"
 
 验证:
@@ -1099,10 +1121,10 @@ B) frida 原生扩展（路径相对本 INSTALL.txt 所在目录：python/ 或 h
 
 连接魔改 server:
   frida -H <device-ip> -p %d -f <package>
-`, cfg.FridaVersion, cfg.MagicName, cfg.ListenPort,
+`), product, pipVer, verNote, cfg.MagicName, cfg.ListenPort, pipVer,
 		cfg.MagicName, cfg.MagicName, cfg.MagicName, strings.ToUpper(cfg.MagicName[:1])+cfg.MagicName[1:],
-		strings.Join(toolsNames, ", "), cfg.FridaVersion,
-		hostList.String(), whl, cfg.FridaVersion, cfg.ListenPort)
+		strings.Join(toolsNames, ", "), pipVer,
+		hostList.String(), whl, pipVer, cfg.ListenPort)
 }
 
 // hostWheelRelPath is the path written into INSTALL.txt / zip (never a host

@@ -5,6 +5,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"fridare-gui/internal/i18n"
 )
 
 // CloneSpec describes a shallow Frida source clone.
@@ -21,11 +23,11 @@ type CloneSpec struct {
 func (c CloneSpec) Validate() error {
 	v := strings.TrimSpace(c.Version)
 	if v == "" {
-		return fmt.Errorf("必须指定 Frida 官方版本（tag/commit）")
+		return fmt.Errorf(i18n.T("必须指定 Frida 官方版本（tag/commit）"))
 	}
 	// Reject path traversal / spaces that break shell scripts
 	if strings.ContainsAny(v, " \t\n\r;&|<>`$\\\"'") {
-		return fmt.Errorf("版本字符串包含非法字符: %q", v)
+		return fmt.Errorf(i18n.T("版本字符串包含非法字符: %q"), v)
 	}
 	return nil
 }
@@ -178,7 +180,7 @@ func BuildPipelineScript(opts PipelineScriptOptions) (string, error) {
 		return "", err
 	}
 	if len(opts.TargetIDs) == 0 {
-		return "", fmt.Errorf("至少选择一个编译目标")
+		return "", fmt.Errorf(i18n.T("至少选择一个编译目标"))
 	}
 	branch := opts.Branch
 	if branch == "" {
@@ -241,7 +243,7 @@ func BuildPipelineScript(opts PipelineScriptOptions) (string, error) {
 // the bind-mounted tree). Runs ONLY configure/make/collect inside Docker — never on host.
 func BuildOnlyPipelineScript(opts PipelineScriptOptions) (string, error) {
 	if len(opts.TargetIDs) == 0 {
-		return "", fmt.Errorf("至少选择一个编译目标")
+		return "", fmt.Errorf(i18n.T("至少选择一个编译目标"))
 	}
 	srcDir := opts.SourceDir
 	if srcDir == "" {
@@ -269,10 +271,10 @@ func BuildOnlyPipelineScript(opts PipelineScriptOptions) (string, error) {
 // Android NDK r29 (Frida 17.x configure requires ANDROID_NDK_ROOT = r29).
 // Install path: ONLY via Dockerfile (docker build). Runtime only verifies.
 const (
-	AndroidNDKVersion   = "r29"
-	AndroidNDKURL       = "https://dl.google.com/android/repository/android-ndk-r29-linux.zip"
-	AndroidNDKR25URL    = "https://dl.google.com/android/repository/android-ndk-r25c-linux.zip"
-	AndroidNDKDirName   = "android-ndk-r29" // legacy workdir name; not used for install
+	AndroidNDKVersion    = "r29"
+	AndroidNDKURL        = "https://dl.google.com/android/repository/android-ndk-r29-linux.zip"
+	AndroidNDKR25URL     = "https://dl.google.com/android/repository/android-ndk-r25c-linux.zip"
+	AndroidNDKDirName    = "android-ndk-r29" // legacy workdir name; not used for install
 	AndroidNDKR25DirName = "android-ndk-r25"
 )
 
@@ -298,12 +300,17 @@ func NeedsLinuxArm64Cross(targetIDs []string) bool {
 		if err != nil {
 			continue
 		}
-		if t.ID == "linux-arm64" || t.Host == "linux-arm64" || t.Host == "aarch64-linux-gnu" ||
-			strings.HasPrefix(t.Host, "aarch64-linux-") {
+		if linuxArm64CrossTarget(t) {
 			return true
 		}
 	}
 	return false
+}
+
+// linuxArm64CrossTarget is the Linux aarch64 product (not Android/Windows arm64).
+func linuxArm64CrossTarget(t BuildTarget) bool {
+	return t.ID == "linux-arm64" || t.Host == "linux-arm64" || t.Host == "aarch64-linux-gnu" ||
+		strings.HasPrefix(t.Host, "aarch64-linux-")
 }
 
 // VerifyBuildEnvShell checks image-provided toolchain only.
@@ -431,14 +438,6 @@ func compileTargetsShell(targetIDs []string, srcDir, artifactDir, stealthSeed st
 		b.WriteString(SelectAndroidNDKForFridaSourceShell(srcDir))
 	}
 	b.WriteString("\n")
-	// linux-arm64: ensure cross CC is visible to Frida configure/meson
-	// (host triplet aarch64-linux-gnu OR explicit CC= both work; set both for robustness)
-	if NeedsLinuxArm64Cross(targetIDs) {
-		b.WriteString("export CC=\"${CC:-aarch64-linux-gnu-gcc}\"\n")
-		b.WriteString("export CXX=\"${CXX:-aarch64-linux-gnu-g++}\"\n")
-		b.WriteString("export CC_FOR_linux_arm64=\"${CC_FOR_linux_arm64:-aarch64-linux-gnu-gcc}\"\n")
-		b.WriteString("export CXX_FOR_linux_arm64=\"${CXX_FOR_linux_arm64:-aarch64-linux-gnu-g++}\"\n")
-	}
 	for _, id := range targetIDs {
 		t, err := TargetByID(id)
 		if err != nil {
@@ -482,6 +481,15 @@ func compileTargetsShell(targetIDs []string, srcDir, artifactDir, stealthSeed st
 		perTU := PerTUStealthFlagsShell(stealthSeed)
 		b.WriteString("(\n")
 		b.WriteString("export ANDROID_NDK_ROOT=\"${ANDROID_NDK_ROOT:-}\"\n")
+		// linux-arm64 only. Exporting CC=aarch64-linux-gnu-gcc for the whole
+		// script makes later --host=linux-x86_64 / android-* / mingw use the
+		// same cross compiler. ${CC:-} still honors an explicit override.
+		if linuxArm64CrossTarget(t) {
+			b.WriteString("export CC=\"${CC:-aarch64-linux-gnu-gcc}\"\n")
+			b.WriteString("export CXX=\"${CXX:-aarch64-linux-gnu-g++}\"\n")
+			b.WriteString("export CC_FOR_linux_arm64=\"${CC_FOR_linux_arm64:-aarch64-linux-gnu-gcc}\"\n")
+			b.WriteString("export CXX_FOR_linux_arm64=\"${CXX_FOR_linux_arm64:-aarch64-linux-gnu-g++}\"\n")
+		}
 		if isMinGW {
 			b.WriteString("export CFLAGS=\"$(echo \"${CFLAGS:-}\" | sed -E 's/-include[[:space:]]+[^[:space:]]+//g')\"\n")
 			b.WriteString("export CPPFLAGS=\"$(echo \"${CPPFLAGS:-}\" | sed -E 's/-include[[:space:]]+[^[:space:]]+//g')\"\n")
@@ -572,32 +580,32 @@ func FormatDockerRunError(stage string, out string, err error) error {
 	hint := ""
 	low := strings.ToLower(out + err.Error())
 	if strings.Contains(low, "connection refused") && (strings.Contains(low, "localhost") || strings.Contains(low, "127.0.0.1")) {
-		hint = "；原因：容器内 localhost 代理不可达，应使用 host.docker.internal（软件已自动改写，请更新到最新构建）"
+		hint = i18n.T("；原因：容器内 localhost 代理不可达，应使用 host.docker.internal（软件已自动改写，请更新到最新构建）")
 	}
 	if strings.Contains(low, "exit status 128") || strings.Contains(low, "exit=128") {
-		hint += "；git exit 128 多为网络/代理/认证失败"
+		hint += i18n.T("；git exit 128 多为网络/代理/认证失败")
 	}
 	if strings.Contains(low, "ndk_root must") || strings.Contains(low, "ndk not found") ||
 		strings.Contains(low, "ndk missing") || strings.Contains(low, "ndk r29 is required") ||
 		strings.Contains(low, "android_ndk_root must") {
-		hint += "；需要 Android NDK r29（应在 Dockerfile/docker build 预装；请重建 fridare/frida-builder 镜像）"
+		hint += i18n.T("；需要 Android NDK r29（应在 Dockerfile/docker build 预装；请重建 fridare/frida-builder 镜像）")
 	}
 	if strings.Contains(low, "need node.js") || strings.Contains(low, "need node.js >=") || strings.Contains(low, "nodejs >=18") {
-		hint += "；需要 Node.js >=18（应在 Dockerfile 预装 Node 20；请重建 builder 镜像，勿在编译任务中现装）"
+		hint += i18n.T("；需要 Node.js >=18（应在 Dockerfile 预装 Node 20；请重建 builder 镜像，勿在编译任务中现装）")
 	}
 	if strings.Contains(low, "need go >=") || strings.Contains(low, "need go >=1") {
-		hint += "；需要 Go >=1.24（应在 Dockerfile 预装；请重建 builder 镜像）"
+		hint += i18n.T("；需要 Go >=1.24（应在 Dockerfile 预装；请重建 builder 镜像）")
 	}
 	if strings.Contains(low, ".version does not exist") || strings.Contains(low, ".symbols does not exist") {
-		hint += "；魔改后缺 version/symbols 文件：内容替换后需同步重命名 frida-agent* 等资源文件名"
+		hint += i18n.T("；魔改后缺 version/symbols 文件：内容替换后需同步重命名 frida-agent* 等资源文件名")
 	}
 	if strings.Contains(low, "signals.sigtrap") || strings.Contains(low, "trace/breakpoint trap") {
-		hint += "；v8-mksnapshot 在此环境无法运行：Frida 16.x 应关闭 compiler_snapshot（与魔改无关）"
+		hint += i18n.T("；v8-mksnapshot 在此环境无法运行：Frida 16.x 应关闭 compiler_snapshot（与魔改无关）")
 	}
 	if msg == "" {
 		return fmt.Errorf("%s: %v%s", stage, err, hint)
 	}
-	return fmt.Errorf("%s: %v%s\n--- docker/git 输出 ---\n%s", stage, err, hint, msg)
+	return fmt.Errorf(i18n.T("%s: %v%s\n--- docker/git 输出 ---\n%s"), stage, err, hint, msg)
 }
 
 // DockerBranchShell creates management branch inside container source tree.

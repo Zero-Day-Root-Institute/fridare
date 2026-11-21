@@ -25,12 +25,21 @@
 
 Fridare 是面向 **iOS / Android / Linux / Windows** 的 Frida 自动化魔改工具：改名称、端口与协议面标识，降低常见环境检测命中率。提供 **命令行 + 跨平台 GUI**，并支持 **静态补丁** 与 **Docker 源码重编译** 双技术路线。
 
+> **界面语言 / GUI language — 中文 · English**
+>
+> GUI 可以切换语言。打开 **设置 → 界面配置 → 语言**，在 **中文** 和 **English** 之间选择。切换后窗口立即重建，并写入 `config.json`（`language`: `zh` 或 `en`）。**默认中文。**
+>
+> The GUI can switch language. Open **Settings → Interface configuration → Language** and choose **中文** or **English**. The window rebuilds immediately and the choice is saved. **Chinese is the default.**
+
 | 版本 | 要点 | 下载 |
 |------|------|------|
-| **v4.0.8**（当前 GUI） | 修 inject 资源改名 / ninja 花指令依赖 / 16.x snapshot；GUI 路径编过 16.7.19 与 17.17.1；**不是免杀** | [v4.0.8](https://github.com/suifei/fridare/releases/tag/v4.0.8) |
+| **v4.1.0**（当前 GUI） | 设置里可在 **中文 / English** 之间切换界面语言，默认中文。**不是免杀** | [v4.1.0](https://github.com/suifei/fridare/releases/tag/v4.1.0) |
+| v4.0.9 | #38：双架构产物不再互相覆盖；Android `backend_class != null`；pip 发行名 `frida-tools` 与 wheel `frida_tools` 分开。**不是免杀** | [v4.0.9](https://github.com/suifei/fridare/releases/tag/v4.0.9) |
+| v4.0.8 | 修 inject 资源改名 / ninja 花指令依赖 / 16.x snapshot；GUI 路径编过 16.7.19 与 17.17.1 | [v4.0.8](https://github.com/suifei/fridare/releases/tag/v4.0.8) |
 | **v4.0.7** | 源码页 stealth 开关（去符号/花指令/行为标记）；静态魔改可去符号；**不是免杀** | [v4.0.7](https://github.com/suifei/fridare/releases/tag/v4.0.7) |
 | **v4.0.6** | Docker **toolchain-v4**（MinGW + aarch64）；监听端口用 `-l` | [v4.0.6](https://github.com/suifei/fridare/releases/tag/v4.0.6) |
-| **kxmwp-17.17.1**（当前 Frida 产物） | 官方 17.17.0；linux-x86_64 GUI 路径 stealth 重编；**不是免杀**；端口用 `-l` | [kxmwp-17.17.1](https://github.com/suifei/fridare/releases/tag/kxmwp-17.17.1) |
+| **xcand-17.24.3**（当前 Frida 产物） | 官方 **17.24.3**；Android arm64/x86_64 deep + host wheels；helper.dex/#41 已修；**不是免杀**；端口用 `-l` | [xcand-17.24.3](https://github.com/suifei/fridare/releases/tag/xcand-17.24.3) |
+| kxmwp-17.17.1 | 官方 17.17.0；linux-x86_64 GUI 路径 stealth 重编；**不是免杀**；端口用 `-l`（请优先用上方 xcand） | [kxmwp-17.17.1](https://github.com/suifei/fridare/releases/tag/kxmwp-17.17.1) |
 | **kxmwp-16.7.19** | 官方 **16.7.19** 八平台 GUI 源码重编译（Android NDK r25）+ host wheels；**不是免杀** | [kxmwp-16.7.19](https://github.com/suifei/fridare/releases/tag/kxmwp-16.7.19) |
 | **kxmwp-17.17.0** | Frida **17.17.0** deep 产物（8 平台 server + host wheels） | [kxmwp-17.17.0](https://github.com/suifei/fridare/releases/tag/kxmwp-17.17.0) |
 | **v4.0.5** | seed 脚本 Docker stage 修复；plan 扫描加速；README/CHANGELOG 精装；MinGW wrap 失败清理 | [v4.0.5](https://github.com/suifei/fridare/releases/tag/v4.0.5) |
@@ -38,7 +47,7 @@ Fridare 是面向 **iOS / Android / Linux / Windows** 的 Frida 自动化魔改�
 | v4.0.3 | CLI 多平台静态链接（win/linux/darwin × amd64/arm64）+ Windows GUI 预编译 | [v4.0.3](https://github.com/suifei/fridare/releases/tag/v4.0.3) |
 | v4.0.0 | Fyne GUI + Windows 原生 deb 魔改 | [v4.0.0](https://github.com/suifei/fridare/releases) |
 
-**文档**：[双技术路线](docs/dual-track.md) · [v4.0.8](docs/release-v4.0.8.md) · [16 vs 17](docs/kxmwp-16-vs-17.md) · [16.7.19](docs/kxmwp-16.7.19.md) · [17.17.1](docs/kxmwp-17.17.1.md) · [Windows](win/README.md) · [Android](docs/android.md) · [iOS](docs/ios.md) · [frida-tools](docs/patch-tools.md) · [安装](docs/install.md) · [CHANGELOG](CHANGELOG)
+**文档**：[双技术路线](docs/dual-track.md) · [v4.1.0](docs/release-v4.1.0.md) · [xcand-17.24.3](docs/xcand-17.24.3.md) · [16 vs 17](docs/kxmwp-16-vs-17.md) · [16.7.19](docs/kxmwp-16.7.19.md) · [17.17.1](docs/kxmwp-17.17.1.md) · [Windows](win/README.md) · [Android](docs/android.md) · [iOS](docs/ios.md) · [frida-tools](docs/patch-tools.md) · [安装](docs/install.md) · [CHANGELOG](CHANGELOG)
 
 ### 双技术路线（v4.0.4）
 
@@ -49,12 +58,19 @@ Fridare 是面向 **iOS / Android / Linux / Windows** 的 Frida 自动化魔改�
 
 **深度魔改（deep）要点**：魔改名固定 **5 位小写 a-z**；server 与 host client wheel **必须成对**（同一 magic）；对象路径含 `/re/{magic}/`，避免只改 `re.frida.` 导致 UNKNOWN_METHOD。详细说明见 **[docs/dual-track.md](docs/dual-track.md)**。
 
-### kxmwp-17.17.1 安装注意
+### xcand-17.24.3 安装注意（当前 Frida 产物）
 
-- **host-wheels / pip**：tools 文件名必须是 PEP 440 本地版本，带 **`+`**。17：`frida_tools-14.10.4+frida.17.17.0.fridare.kxmwp-py3-none-any.whl`。16：`frida_tools-13.7.1+frida.16.7.19.fridare.kxmwp-py3-none-any.whl`。请重新下载 [kxmwp-16.7.19](https://github.com/suifei/fridare/releases/tag/kxmwp-16.7.19) 的 `host-wheels.zip`（旧 zip 里 `frida_tools-tools.frida.16.7.19…` pip 拒装）。写成 `14.10.4.frida.` 也会报 `Invalid wheel filename`（[#36](https://github.com/suifei/fridare/issues/36)）。16/17 的 tools **不能混用**。
-- **Android `kxmwp-server` abort**（`backend_class != null`）：请用本 tag **重新下载** `frida-kxmwp-17.17.1-android-arm64-server.zip`。旧包 helper dex 仍是 `re/frida`，native 已是 `re.kxmwp`。
+- **优先用本 tag**：[xcand-17.24.3](https://github.com/suifei/fridare/releases/tag/xcand-17.24.3)（Android arm64/x86_64 deep + host wheels）。说明见 [docs/xcand-17.24.3.md](docs/xcand-17.24.3.md)。**不是免杀**；端口用 `-l`。
+- **Android `backend_class != null`（[#41](https://github.com/suifei/fridare/issues/41)）**：请下 **xcand-17.24.3** 的 android zip。本批已修 helper.dex / string_ids（`re.xcand`，`backend_class != null` 不再因旧 dex 触发）。旧 kxmwp 包若仍 abort，不要继续用，改下本 tag。
+- **host-wheels / pip**：tools 文件名必须是 PEP 440 本地版本，带 **`+`**。本 tag：`frida_tools-14.11.0+frida.17.24.3.fridare.xcand-py3-none-any.whl`。server 与 host wheel **同一 magic**。
+- **顺带**：catalog 架构隔离（[#38](https://github.com/suifei/fridare/issues/38) 续）；Windows 编译路径无黑窗（`CREATE_NO_WINDOW`）。
+
+#### 历史：kxmwp-17.17.1 / 16.7.19
+
+- **host-wheels / pip（旧包）**：17：`frida_tools-14.10.4+frida.17.17.0.fridare.kxmwp-py3-none-any.whl`。16：`frida_tools-13.7.1+frida.16.7.19.fridare.kxmwp-py3-none-any.whl`。请重新下载 [kxmwp-16.7.19](https://github.com/suifei/fridare/releases/tag/kxmwp-16.7.19) 的 `host-wheels.zip`（旧 zip 里 `frida_tools-tools.frida.16.7.19…` pip 拒装）。写成 `14.10.4.frida.` 也会报 `Invalid wheel filename`（[#36](https://github.com/suifei/fridare/issues/36)）。16/17 的 tools **不能混用**。
+- **Android `kxmwp-server` abort**：历史说明见 [docs/kxmwp-17.17.1.md](docs/kxmwp-17.17.1.md)；新环境请直接用 **xcand-17.24.3**。
 - **16.x `frida-ps`：`undefined symbol: kxmwp_agent_main`**：请重新下载 [kxmwp-16.7.19](https://github.com/suifei/fridare/releases/tag/kxmwp-16.7.19) 的 `android-arm64` zip。补丁只改 agent ELF 的 hash，并把 GumJS 全局改成 `Kxmwp`（不会把 `Frida.` 写回产物）。客户端必须 `frida==16.7.19` 魔改 wheel。
-- **Frida 17 `Java.perform`**：`frida` CLI / `frida-trace` 自带 java-bridge。Python `session.create_script` 要自己处理 `frida:load-bridge`，否则 `Java is not defined`。native `Interceptor` 不受影响。用法见 [docs/kxmwp-17.17.1.md](docs/kxmwp-17.17.1.md)。
+- **Frida 17 `Java.perform`**：`frida` CLI / `frida-trace` 自带 java-bridge。Python `session.create_script` 要自己处理 `frida:load-bridge`，否则 `Java is not defined`。native `Interceptor` 不受影响。用法见 [docs/xcand-17.24.3.md](docs/xcand-17.24.3.md) / [docs/kxmwp-17.17.1.md](docs/kxmwp-17.17.1.md)。
 
 ```text
 GUI：打开「源码重编译」→ 选 deep →「一键深度定制（①+② deep）」
@@ -648,7 +664,11 @@ Fridare automates Frida customization on **iOS / Android / Linux / Windows**: re
 | **A · Static patch (default)** | hex/string replace on official binaries + tools | No Docker |
 | **B · Source rebuild (optional)** | AI/host edits + **Docker-only** `configure/make` (incl. MinGW Windows server) | Docker |
 
-**v4.0.8**: GUI-path rebuild for official 16.7.19 and product-label 17.17.1; inject rename / ninja ARGS-only junk / 16.x snapshot disable. Not AV evasion. See [docs/release-v4.0.8.md](docs/release-v4.0.8.md).
+**v4.1.0**: the GUI switches between **中文** and **English** under **Settings → Interface configuration → Language**. Chinese stays the default. See [docs/release-v4.1.0.md](docs/release-v4.1.0.md).
+
+**xcand-17.24.3** (current Frida product tag, not GUI): official **17.24.3**, Android arm64/x86_64 deep + host wheels; #41 helper.dex fixed. Not AV evasion. Port via `-l`. See [docs/xcand-17.24.3.md](docs/xcand-17.24.3.md).
+
+**v4.0.9**: #38 multi-arch catalog overwrite, Android `backend_class != null`, and `frida-tools` vs `frida_tools` install notes. Not AV evasion. See [docs/release-v4.0.9.md](docs/release-v4.0.9.md).
 
 [CHANGELOG](CHANGELOG) · Chinese docs above · [Windows notes](win/README.md)
 
